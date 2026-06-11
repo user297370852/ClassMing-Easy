@@ -1,8 +1,8 @@
 #!/bin/bash
-# Batch-run Classming over classes in sootOutput/leetcodes and export accepted mutants.
+# Batch-run Classming over classes in a user-provided seed corpus and export accepted mutants.
 #
 # Usage:
-#   ./run_leetcodes_batch.sh --input <leetcode-classes-dir> --out <output-dir> --iterations 20
+#   ./run_seed_corpus_batch.sh --input <seed-corpus-dir> --out <output-dir> --iterations 20
 #
 # Output layout:
 #   <out>/manifest.tsv
@@ -11,7 +11,7 @@
 
 set -u
 
-INPUT="sootOutput/leetcodes"
+INPUT="sootOutput/seeds"
 CLASSPATH_ROOT=""
 OUT="generated-leetcode-tests"
 ITERATIONS="10"
@@ -82,7 +82,7 @@ fi
 
 ORIGINAL_INPUT="$INPUT"
 if [ -z "$WORKDIR" ]; then
-    WORKDIR="$OUT/work/leetcodes"
+    WORKDIR="$OUT/work/seed-corpus"
 fi
 
 rm -rf "$WORKDIR"
@@ -91,8 +91,13 @@ cp -R "$ORIGINAL_INPUT" "$WORKDIR"
 INPUT="$WORKDIR"
 
 if [ -z "$CLASSPATH_ROOT" ]; then
-    if [ -d "$INPUT/out/production/leetcodes" ]; then
-        CLASSPATH_ROOT="$INPUT/out/production/leetcodes"
+    production_roots=()
+    for candidate_root in "$INPUT"/out/production/*; do
+        [ -d "$candidate_root" ] || continue
+        production_roots+=("$candidate_root")
+    done
+    if [ "${#production_roots[@]}" -eq 1 ]; then
+        CLASSPATH_ROOT="${production_roots[0]}"
     else
         CLASSPATH_ROOT="$INPUT"
     fi

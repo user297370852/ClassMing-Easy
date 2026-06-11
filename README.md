@@ -4,7 +4,7 @@ Classming Easy 是对 Classming 原型仓库的整理版本，用于从 Java cla
 
 Classming 来自论文 *Deep Differential Testing of JVM Implementations* (ICSE 2019)。核心思想是执行 seed class，收集 live bytecode，然后在活跃字节码上插入控制流变异（如 `goto`、`return`、`lookupswitch`），生成可运行 mutant。
 
-本仓库额外提供了构建、单 seed 运行、批量运行 leetcodes seed、导出 clean testcase 等脚本。默认导出的 testcase 会删除 Classming 内部的 `Print.logPrint(...)` trace instrumentation，因此更适合接入其他测试框架。
+本仓库额外提供了构建、单 seed 运行、批量运行使用者自行收集的 seed corpus、导出 clean testcase 等脚本。默认导出的 testcase 会删除 Classming 内部的 `Print.logPrint(...)` trace instrumentation，因此更适合接入其他测试框架。
 
 ## 环境要求
 
@@ -39,7 +39,7 @@ scripts/classpath.sh               共享 classpath 解析逻辑
 build.sh                           编译脚本
 run.sh                             单 seed 运行脚本
 export_testcases.sh                导出 AcceptHistory 为 clean testcase
-run_leetcodes_batch.sh             批量扫描并运行 leetcodes seed
+run_seed_corpus_batch.sh           批量扫描并运行使用者自行收集的 seed corpus
 clean_exported_testcases.sh        清理已有 testcase 中的 Print 插桩
 fix_exported_testcase_paths.sh     修复旧版本导出路径中的反斜杠问题
 dependencies/                      原仓库已有依赖，部分旧版本 jar 会被脚本跳过
@@ -58,6 +58,40 @@ sootOutput/                        原仓库已有示例 seed，不建议提交�
 out/production/classming/
 ```
 
+## Seed Corpus 规约
+
+使用者需要自行准备 seed corpus。本仓库不会提交个人收集的 seed corpus 或生成结果。
+
+一个 seed corpus 应满足以下规约：
+
+1. 输入目录必须包含已经编译好的 `.class` 文件。
+2. `--classpath` 或 `--classpath-root` 必须指向 Java package root，而不是任意上层目录。
+3. class 文件路径必须与包名一致。例如 `array.ArrayNesting` 必须位于 `<classpath-root>/array/ArrayNesting.class`。
+4. 默认批处理只运行带 `public static void main(String[])` 的 class；没有 main 的 class 会被跳过。
+5. seed class 的 `main` 最好无需交互输入，且能在限定时间内结束。
+6. seed corpus 中若有辅助类，应与 seed class 放在同一个 classpath root 下，或通过额外 classpath 机制提供。
+7. 不建议直接在原始 seed corpus 上运行 Classming；批处理脚本会复制一份工作副本再运行，避免污染原始文件。
+8. 如果输入目录使用 IDE 输出结构，例如 `out/production/<project>`，批处理脚本可在只有一个 project 输出目录时自动识别；其他结构可用 `--classpath-root` 手动指定。
+
+示例结构：
+
+```text
+my-seeds/
+└── out/production/classes/
+    ├── array/
+    │   └── ArrayNesting.class
+    ├── bit_manipulation/
+    │   └── HammingDistance.class
+    └── helper/
+        └── Utils.class
+```
+
+对应 classpath root：
+
+```text
+my-seeds/out/production/classes
+```
+
 ## 单个 seed 运行
 
 ```bash
@@ -71,9 +105,9 @@ out/production/classming/
 
 ```bash
 ./run.sh \
-  --seed bit_manipulation.HammingDistance \
+  --seed example.Main \
   --iterations 20 \
-  --classpath ./sootOutput/leetcodes/out/production/leetcodes/
+  --classpath ./my-seeds/out/production/classes/
 ```
 
 参数：
@@ -119,16 +153,17 @@ generated-tests/
 java -cp "generated-tests/<mutant-id>:<original-seed-classpath-root>" <seed-class>
 ```
 
-## 批量运行 leetcodes seed
+## 批量运行 Seed Corpus
 
-`run_leetcodes_batch.sh` 会复制一份输入 seed 到输出目录的 `work/` 中，避免污染原始 seed。它默认只运行带有 `public static void main(String[])` 的 class。
+`run_seed_corpus_batch.sh` 会复制一份输入 seed corpus 到输出目录的 `work/` 中，避免污染原始 seed。它默认只运行带有 `public static void main(String[])` 的 class。
 
 小规模冒烟测试：
 
 ```bash
-./run_leetcodes_batch.sh \
-  --input sootOutput/leetcodes \
-  --out generated-leetcode-tests-smoke \
+./run_seed_corpus_batch.sh \
+  --input my-seeds \
+  --classpath-root my-seeds/out/production/classes \
+  --out generated-seed-tests-smoke \
   --iterations 2 \
   --timeout 90 \
   --limit 10
@@ -137,9 +172,10 @@ java -cp "generated-tests/<mutant-id>:<original-seed-classpath-root>" <seed-clas
 正式运行：
 
 ```bash
-./run_leetcodes_batch.sh \
-  --input sootOutput/leetcodes \
-  --out generated-leetcode-tests \
+./run_seed_corpus_batch.sh \
+  --input my-seeds \
+  --classpath-root my-seeds/out/production/classes \
+  --out generated-seed-tests \
   --iterations 20 \
   --timeout 180
 ```
@@ -147,7 +183,7 @@ java -cp "generated-tests/<mutant-id>:<original-seed-classpath-root>" <seed-clas
 参数：
 
 ```text
---input <dir>            leetcodes seed 根目录
+--input <dir>            seed corpus 根目录
 --classpath-root <dir>   手动指定 seed classpath root，通常不需要
 --out <dir>              输出目录
 --iterations <N>         每个 seed 的 mutation 迭代次数
@@ -161,7 +197,7 @@ java -cp "generated-tests/<mutant-id>:<original-seed-classpath-root>" <seed-clas
 输出结构：
 
 ```text
-generated-leetcode-tests/
+generated-seed-tests/
 ├── manifest.tsv
 ├── logs/
 │   └── <seed>.log
@@ -173,7 +209,7 @@ generated-leetcode-tests/
 │           └── pkg/
 │               └── Class.class         clean testcase
 └── work/
-    ├── leetcodes/                      输入 seed 的工作副本
+    ├── seed-corpus/                    输入 seed corpus 的工作副本
     └── clean-root/                     未变异依赖 classpath root
 ```
 
@@ -186,7 +222,7 @@ seed    mutant_id    testcase_dir    seed_classpath    run_command
 批量运行导出的 testcase：
 
 ```bash
-awk -F '\t' 'NR > 1 {print $1 "\t" $3 "\t" $4}' generated-leetcode-tests/manifest.tsv | while IFS=$'\t' read -r seed testcase_dir seed_cp; do
+awk -F '\t' 'NR > 1 {print $1 "\t" $3 "\t" $4}' generated-seed-tests/manifest.tsv | while IFS=$'\t' read -r seed testcase_dir seed_cp; do
   java -cp "$testcase_dir:$seed_cp" "$seed"
 done
 ```
@@ -196,7 +232,7 @@ done
 如果你用旧脚本生成过带 `Print.class` 和 `Print.logPrint(...)` 的 testcase，可原地清理：
 
 ```bash
-./clean_exported_testcases.sh generated-leetcode-tests
+./clean_exported_testcases.sh generated-seed-tests
 ```
 
 该脚本会删除 testcase 目录下的 `Print.class`，并重写每个 mutant class，去掉 `Print.logPrint(...)` 调用。
@@ -206,7 +242,7 @@ done
 早期脚本曾把包路径导出成带反斜杠的目录，例如 `array\`。修复命令：
 
 ```bash
-./fix_exported_testcase_paths.sh generated-leetcode-tests
+./fix_exported_testcase_paths.sh generated-seed-tests
 ```
 
 ## 差分测试多个 JVM
@@ -214,7 +250,7 @@ done
 可以对 `manifest.tsv` 中的 testcase 用多个 JVM 运行并比较输出：
 
 ```bash
-awk -F '\t' 'NR > 1 {print $1 "\t" $3 "\t" $4}' generated-leetcode-tests/manifest.tsv | while IFS=$'\t' read -r seed testcase_dir seed_cp; do
+awk -F '\t' 'NR > 1 {print $1 "\t" $3 "\t" $4}' generated-seed-tests/manifest.tsv | while IFS=$'\t' read -r seed testcase_dir seed_cp; do
   jenv exec 1.8 java -cp "$testcase_dir:$seed_cp" "$seed" > /tmp/jdk8.out 2>&1 || true
   jenv exec 17 java -cp "$testcase_dir:$seed_cp" "$seed" > /tmp/jdk17.out 2>&1 || true
   diff /tmp/jdk8.out /tmp/jdk17.out || echo "JVM difference: $testcase_dir"
@@ -235,6 +271,8 @@ generated-*/
 batch-*/
 clean-batch-*/
 sootOutput/leetcodes*/
+sootOutput/*_seeds*/
+sootOutput/seeds*/
 lib/
 *.log
 *.zip

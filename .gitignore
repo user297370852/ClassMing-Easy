@@ -35,4 +35,6 @@ sources.txt
 /clean-batch-*/
 /smoke-*/
 /sootOutput/leetcodes*/
+/sootOutput/*_seeds*/
+/sootOutput/seeds*/
 /lib/
