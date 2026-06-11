@@ -349,6 +349,9 @@ public class MutateClass {
 //        Body methodBody = this.methodLiveBody.get(signature);
 //        UnitPatchingChain units = methodBody.getUnits();
         Random rand = new Random();
+        if (targetLiveCode == null || targetLiveCode.size() == 0) {
+            return 0;
+        }
         if (shouldRandom) {
             return rand.nextInt(targetLiveCode.size());
         }
@@ -373,7 +376,11 @@ public class MutateClass {
     public Stmt selectTargetPoints(String signature) {
         Random random = new Random();
         while (true) {
-            int tpIndex = random.nextInt(this.methodOriginalStmtList.get(signature).size() - 1) + 1;
+            int listSize = this.methodOriginalStmtList.get(signature).size();
+            if (listSize <= 2) {
+                return this.methodOriginalStmtList.get(signature).get(0);
+            }
+            int tpIndex = random.nextInt(listSize - 1) + 1;
             double rand = random.nextDouble();
             Stmt nextStmt = this.methodOriginalStmtList.get(signature).get(tpIndex);
             if (shouldRandom) {

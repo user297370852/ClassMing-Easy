@@ -27,3 +27,12 @@ findPopulationsInTemp*
 /dependencies/*
 /sootOutput/*
 /src/com/classming/ModifyConstant.java
+/*-test*
+.DS_Store
+sources.txt
+/generated-*/
+/batch-*/
+/clean-batch-*/
+/smoke-*/
+/sootOutput/leetcodes*/
+/lib/
