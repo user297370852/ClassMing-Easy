@@ -2,7 +2,7 @@
 # Fix old exported testcase directories produced with literal backslashes in path names.
 #
 # Usage:
-#   ./fix_exported_testcase_paths.sh generated-leetcode-tests
+#   ./classming.sh fix-paths generated-seed-tests
 
 set -e
 

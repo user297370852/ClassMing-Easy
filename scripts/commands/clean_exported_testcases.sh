@@ -2,14 +2,14 @@
 # Remove Print.logPrint instrumentation from already-exported testcases and delete Print.class helpers.
 #
 # Usage:
-#   ./clean_exported_testcases.sh <generated-output-dir>
+#   ./classming.sh clean-export <generated-output-dir>
 #
 # Example:
-#   ./clean_exported_testcases.sh generated-tests
+#   ./classming.sh clean-export generated-tests
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SCRIPT_DIR"
 
 . "$SCRIPT_DIR/scripts/classpath.sh"
@@ -22,7 +22,7 @@ if [ ! -d "$OUT/testcases" ]; then
 fi
 
 if [ ! -d "out/production/classming" ]; then
-    ./build.sh
+    ./classming.sh build
 fi
 
 STRIP_CP="$(build_strip_cp)"

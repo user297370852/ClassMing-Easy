@@ -2,7 +2,7 @@
 # Run Classming on one seed class.
 #
 # Usage:
-#   ./run.sh --seed <className> --iterations <N> [options]
+#   ./classming.sh run --seed <className> --iterations <N> [options]
 #
 # Options:
 #   --seed <className>       Target class to mutate, e.g. com.classming.Hello
@@ -18,14 +18,14 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SCRIPT_DIR"
 
 . "$SCRIPT_DIR/scripts/classpath.sh"
 
 if [ ! -d "out/production/classming" ]; then
-    echo "Compiled classes not found. Running ./build.sh first."
-    ./build.sh
+    echo "Compiled classes not found. Running ./classming.sh build first."
+    ./classming.sh build
 fi
 
 mkdir -p tmp nolivecode AcceptHistory RejectHistory

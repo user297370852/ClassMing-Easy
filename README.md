@@ -15,7 +15,7 @@ Classming 来自论文 *Deep Differential Testing of JVM Implementations* (ICSE 
 依赖 jar 推荐放在仓库根目录的 `lib/`，或者通过 `CLASSMING_LIB_DIR` 指定：
 
 ```bash
-CLASSMING_LIB_DIR=/path/to/classming-libs ./build.sh
+CLASSMING_LIB_DIR=/path/to/classming-libs ./classming.sh build
 ```
 
 脚本会优先从以下位置寻找外部依赖：
@@ -28,20 +28,16 @@ CLASSMING_LIB_DIR=/path/to/classming-libs ./build.sh
 至少需要能找到 `soot-*.jar`、`asm-*.jar`、`asm-tree-*.jar`。运行阶段通常还需要 `guava-*.jar`、`jasmin-*.jar`、`java_cup-*.jar` 等 Soot/Jasmin 依赖。如果 JDK 8 不在常规位置，可设置：
 
 ```bash
-JAVA8_HOME=/path/to/jdk8 ./run.sh --seed com.example.Main --classpath ./seeds
+JAVA8_HOME=/path/to/jdk8 ./classming.sh run --seed com.example.Main --classpath ./seeds
 ```
 
 ## 仓库内容
 
 ```text
 src/com/classming/                 Classming Java 源码
+classming.sh                       统一命令入口
 scripts/classpath.sh               共享 classpath 解析逻辑
-build.sh                           编译脚本
-run.sh                             单 seed 运行脚本
-export_testcases.sh                导出 AcceptHistory 为 clean testcase
-run_seed_corpus_batch.sh           批量扫描并运行使用者自行收集的 seed corpus
-clean_exported_testcases.sh        清理已有 testcase 中的 Print 插桩
-fix_exported_testcase_paths.sh     修复旧版本导出路径中的反斜杠问题
+scripts/commands/                  子命令实现脚本
 dependencies/                      原仓库已有依赖，部分旧版本 jar 会被脚本跳过
 sootOutput/                        原仓库已有示例 seed，不建议提交个人 seed 或输出
 ```
@@ -49,7 +45,7 @@ sootOutput/                        原仓库已有示例 seed，不建议提交�
 ## 构建
 
 ```bash
-./build.sh
+./classming.sh build
 ```
 
 输出目录：
@@ -95,7 +91,7 @@ my-seeds/out/production/classes
 ## 单个 seed 运行
 
 ```bash
-./run.sh \
+./classming.sh run \
   --seed <fully.qualified.MainClass> \
   --iterations 20 \
   --classpath <seed-classpath-root>
@@ -104,7 +100,7 @@ my-seeds/out/production/classes
 示例：
 
 ```bash
-./run.sh \
+./classming.sh run \
   --seed example.Main \
   --iterations 20 \
   --classpath ./my-seeds/out/production/classes/
@@ -135,7 +131,7 @@ nolivecode/          无 live code 的 mutant
 ## 导出 clean testcase
 
 ```bash
-./export_testcases.sh --history AcceptHistory --out generated-tests
+./classming.sh export --history AcceptHistory --out generated-tests
 ```
 
 导出结构：
@@ -155,12 +151,12 @@ java -cp "generated-tests/<mutant-id>:<original-seed-classpath-root>" <seed-clas
 
 ## 批量运行 Seed Corpus
 
-`run_seed_corpus_batch.sh` 会复制一份输入 seed corpus 到输出目录的 `work/` 中，避免污染原始 seed。它默认只运行带有 `public static void main(String[])` 的 class。
+`./classming.sh batch` 会复制一份输入 seed corpus 到输出目录的 `work/` 中，避免污染原始 seed。它默认只运行带有 `public static void main(String[])` 的 class。
 
 小规模冒烟测试：
 
 ```bash
-./run_seed_corpus_batch.sh \
+./classming.sh batch \
   --input my-seeds \
   --classpath-root my-seeds/out/production/classes \
   --out generated-seed-tests-smoke \
@@ -172,7 +168,7 @@ java -cp "generated-tests/<mutant-id>:<original-seed-classpath-root>" <seed-clas
 正式运行：
 
 ```bash
-./run_seed_corpus_batch.sh \
+./classming.sh batch \
   --input my-seeds \
   --classpath-root my-seeds/out/production/classes \
   --out generated-seed-tests \
@@ -241,12 +237,12 @@ classHistory/compiler.c1.TestUnalignedLoad/compiler.c1.TestUnalignedLoad-origin.
 compiler.c1.TestUnalignedLoad
 ```
 
-这种目录不能直接作为 classpath root 传给 `run_seed_corpus_batch.sh`。应使用 `run_classfile_corpus_batch.sh`，它会读取每个 `.class` 的内部类名，并为每个 seed 创建标准化运行目录。
+这种目录不能直接作为 classpath root 传给 `./classming.sh batch`。应使用 `./classming.sh batch-classfiles`，它会读取每个 `.class` 的内部类名，并为每个 seed 创建标准化运行目录。
 
 示例：
 
 ```bash
-./run_classfile_corpus_batch.sh \
+./classming.sh batch-classfiles \
   --input sootOutput/HotSpot \
   --out generated-hotspot-tests \
   --iterations 3 \
@@ -288,7 +284,7 @@ generated-hotspot-tests/
 如果你用旧脚本生成过带 `Print.class` 和 `Print.logPrint(...)` 的 testcase，可原地清理：
 
 ```bash
-./clean_exported_testcases.sh generated-seed-tests
+./classming.sh clean-export generated-seed-tests
 ```
 
 该脚本会删除 testcase 目录下的 `Print.class`，并重写每个 mutant class，去掉 `Print.logPrint(...)` 调用。
@@ -298,7 +294,7 @@ generated-hotspot-tests/
 早期脚本曾把包路径导出成带反斜杠的目录，例如 `array\`。修复命令：
 
 ```bash
-./fix_exported_testcase_paths.sh generated-seed-tests
+./classming.sh fix-paths generated-seed-tests
 ```
 
 ## 差分测试多个 JVM

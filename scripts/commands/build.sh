@@ -2,14 +2,14 @@
 # Build all Classming Java sources.
 #
 # Usage:
-#   ./build.sh
+#   ./classming.sh build
 #
 # Optional:
-#   CLASSMING_LIB_DIR=/path/to/jars ./build.sh
+#   CLASSMING_LIB_DIR=/path/to/jars ./classming.sh build
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SCRIPT_DIR"
 
 . "$SCRIPT_DIR/scripts/classpath.sh"
@@ -27,5 +27,5 @@ echo ""
 echo "=== Build Complete ==="
 echo "Output: out/production/classming/"
 echo ""
-echo "To run: ./run.sh --seed <className> --iterations <N> [options]"
-echo "Example: ./run.sh --seed com.classming.Hello --iterations 50"
+echo "To run: ./classming.sh run --seed <className> --iterations <N> [options]"
+echo "Example: ./classming.sh run --seed com.classming.Hello --iterations 50"

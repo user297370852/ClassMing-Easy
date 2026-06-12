@@ -2,7 +2,7 @@
 # Export Classming accepted mutants into runnable classpath overlay directories.
 #
 # Usage:
-#   ./export_testcases.sh --history AcceptHistory --out generated-tests
+#   ./classming.sh export --history AcceptHistory --out generated-tests
 #
 # Each exported testcase directory contains cleaned mutated classes.
 # Run it by putting the testcase directory before the original seed classpath:
@@ -10,7 +10,7 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SCRIPT_DIR"
 
 . "$SCRIPT_DIR/scripts/classpath.sh"
@@ -43,7 +43,7 @@ fi
 mkdir -p "$OUT"
 
 if [ ! -d "out/production/classming" ]; then
-    ./build.sh
+    ./classming.sh build
 fi
 
 count=0

@@ -5,7 +5,7 @@
 # classpath root, runs Classming, and exports clean testcases.
 #
 # Usage:
-#   ./run_classfile_corpus_batch.sh --input <classfile-corpus-dir> --out <output-dir> --iterations 20
+#   ./classming.sh batch-classfiles --input <classfile-corpus-dir> --out <output-dir> --iterations 20
 
 set -u
 
@@ -53,7 +53,7 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
 . "$SCRIPT_DIR/scripts/classpath.sh"
@@ -64,7 +64,7 @@ if [ ! -d "$INPUT" ]; then
 fi
 
 if [ ! -d "out/production/classming" ]; then
-    ./build.sh || exit 1
+    ./classming.sh build || exit 1
 fi
 
 mkdir -p "$OUT/testcases" "$OUT/logs" "$OUT/raw" "$OUT/work/deps" "$OUT/work/run" tmp AcceptHistory RejectHistory nolivecode
@@ -176,7 +176,7 @@ run_classfile_seed() {
     watch_accept_history "$seed" "$seed_id" "$deps_root" "$classfile" "$stop_file" &
     watcher_pid=$!
 
-    timeout "$TIMEOUT_SECONDS" ./run.sh \
+    timeout "$TIMEOUT_SECONDS" ./classming.sh run \
         --seed "$seed" \
         --iterations "$ITERATIONS" \
         --classpath "./$run_root/" \

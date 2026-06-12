@@ -2,7 +2,7 @@
 # Batch-run Classming over classes in a user-provided seed corpus and export accepted mutants.
 #
 # Usage:
-#   ./run_seed_corpus_batch.sh --input <seed-corpus-dir> --out <output-dir> --iterations 20
+#   ./classming.sh batch --input <seed-corpus-dir> --out <output-dir> --iterations 20
 #
 # Output layout:
 #   <out>/manifest.tsv
@@ -70,7 +70,7 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
 . "$SCRIPT_DIR/scripts/classpath.sh"
@@ -115,7 +115,7 @@ if [ ! -d "$CLASSPATH_ROOT" ]; then
 fi
 
 if [ ! -d "out/production/classming" ]; then
-    ./build.sh || exit 1
+    ./classming.sh build || exit 1
 fi
 
 mkdir -p "$OUT/testcases" "$OUT/logs" "$OUT/raw" tmp AcceptHistory RejectHistory nolivecode
@@ -212,7 +212,7 @@ run_seed() {
     watch_accept_history "$seed" "$stop_file" &
     watcher_pid=$!
 
-    timeout "$TIMEOUT_SECONDS" ./run.sh \
+    timeout "$TIMEOUT_SECONDS" ./classming.sh run \
         --seed "$seed" \
         --iterations "$ITERATIONS" \
         --classpath "./$CLASSPATH_ROOT/" \
