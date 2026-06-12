@@ -227,6 +227,62 @@ awk -F '\t' 'NR > 1 {print $1 "\t" $3 "\t" $4}' generated-seed-tests/manifest.ts
 done
 ```
 
+## 批量运行非标准文件名 Class Corpus
+
+有些高质量 seed corpus 的 class 文件不是标准 Java package 路径布局，例如文件可能是：
+
+```text
+classHistory/compiler.c1.TestUnalignedLoad/compiler.c1.TestUnalignedLoad-origin.class
+```
+
+但 class 内部真实名字是：
+
+```text
+compiler.c1.TestUnalignedLoad
+```
+
+这种目录不能直接作为 classpath root 传给 `run_seed_corpus_batch.sh`。应使用 `run_classfile_corpus_batch.sh`，它会读取每个 `.class` 的内部类名，并为每个 seed 创建标准化运行目录。
+
+示例：
+
+```bash
+./run_classfile_corpus_batch.sh \
+  --input sootOutput/HotSpot \
+  --out generated-hotspot-tests \
+  --iterations 3 \
+  --timeout 60
+```
+
+参数：
+
+```text
+--input <dir>        class 文件 corpus 根目录，可以包含非标准文件名
+--out <dir>          输出目录
+--iterations <N>     每个 seed 的 mutation 迭代次数
+--timeout <seconds>  每个 seed 的最大运行时间
+--limit <N>          最多处理 N 个 seed，0 表示不限制
+--run-all            不检查 main(String[])，所有 class 都尝试运行
+```
+
+输出结构：
+
+```text
+generated-hotspot-tests/
+├── manifest.tsv
+├── logs/
+├── raw/
+├── testcases/
+│   └── <seed-id>/
+│       └── <mutant-id>/
+│           └── pkg/
+│               └── Class.class
+└── work/
+    ├── deps/<seed-id>/     标准化后的原始依赖 classpath root
+    └── run/<seed-id>/      Classming 运行时使用的可改写副本
+```
+
+`manifest.tsv` 多一列 `source_class`，记录该 testcase 来自哪个原始 class 文件。
+
 ## 清理已有输出中的 Print 插桩
 
 如果你用旧脚本生成过带 `Print.class` 和 `Print.logPrint(...)` 的 testcase，可原地清理：
