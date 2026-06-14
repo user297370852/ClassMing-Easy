@@ -9,10 +9,10 @@ Classming 来自论文 *Deep Differential Testing of JVM Implementations* (ICSE 
 ## 环境要求
 
 - JDK 8。Soot 处理 Java 8 class 最稳定，运行脚本会尝试定位 `rt.jar`。
-- Bash、`javac`、`java`、`javap`、`rg`、`timeout`。
-- Soot/ASM/Guava/Jasmin/java_cup 等外部 jar。
+- Bash、`javac`、`java`、`javap`、`timeout`。
+- Soot/ASM/Guava/Jasmin/java_cup 等外部 jar。仓库 `dependencies/` 已包含一组可用 jar；也可以用 `CLASSMING_LIB_DIR` 或 `lib/` 覆盖。
 
-依赖 jar 推荐放在仓库根目录的 `lib/`，或者通过 `CLASSMING_LIB_DIR` 指定：
+依赖 jar 推荐放在仓库根目录的 `dependencies/`，也可以放在 `lib/`，或者通过 `CLASSMING_LIB_DIR` 指定：
 
 ```bash
 CLASSMING_LIB_DIR=/path/to/classming-libs ./classming.sh build
@@ -21,8 +21,8 @@ CLASSMING_LIB_DIR=/path/to/classming-libs ./classming.sh build
 脚本会优先从以下位置寻找外部依赖：
 
 1. `CLASSMING_LIB_DIR`
-2. `./lib`
-3. `./dependencies`
+2. `./dependencies`
+3. `./lib`
 4. 本机 Maven 缓存 `~/.m2/repository`
 
 至少需要能找到 `soot-*.jar`、`asm-*.jar`、`asm-tree-*.jar`。运行阶段通常还需要 `guava-*.jar`、`jasmin-*.jar`、`java_cup-*.jar` 等 Soot/Jasmin 依赖。如果 JDK 8 不在常规位置，可设置：
@@ -237,7 +237,7 @@ classHistory/compiler.c1.TestUnalignedLoad/compiler.c1.TestUnalignedLoad-origin.
 compiler.c1.TestUnalignedLoad
 ```
 
-这种目录不能直接作为 classpath root 传给 `./classming.sh batch`。应使用 `./classming.sh batch-classfiles`，它会读取每个 `.class` 的内部类名，并为每个 seed 创建标准化运行目录。
+这种目录不能直接作为 classpath root 传给 `./classming.sh batch`。应使用 `./classming.sh batch-classfiles`，它会读取每个 `.class` 的内部类名，并为每个 seed 创建标准化运行目录，例如把 `compiler.c1.TestUnalignedLoad` 放到 `compiler/c1/TestUnalignedLoad.class`。如果同目录下存在同一顶层类的内部类或 sibling class，也会一起复制到该 seed 的标准化 classpath root。
 
 示例：
 

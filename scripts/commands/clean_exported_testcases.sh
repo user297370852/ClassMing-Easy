@@ -35,7 +35,7 @@ find "$OUT/testcases" -type f -name '*.class' | while IFS= read -r class_file; d
             ;;
         *)
             tmp_file="$class_file.clean.tmp"
-            java -cp "$STRIP_CP" com.classming.util.StripPrintInstrumentation "$class_file" "$tmp_file"
+            "$(resolve_java8)" -cp "$STRIP_CP" com.classming.util.StripPrintInstrumentation "$class_file" "$tmp_file"
             mv "$tmp_file" "$class_file"
             count=$((count + 1))
             ;;

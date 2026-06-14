@@ -131,6 +131,8 @@ mkdir -p "$CLEAN_CLASSPATH_ROOT"
 cp -R "$CLASSPATH_ROOT"/. "$CLEAN_CLASSPATH_ROOT"/
 
 cp "sootOutput/Print.class" "$CLASSPATH_ROOT/Print.class" 2>/dev/null || true
+cp "sootOutput/leetcodes/out/production/leetcodes/GCObj.class" "$CLASSPATH_ROOT/GCObj.class" 2>/dev/null || true
+cp "sootOutput/HotSpot/GCObj.class" "$CLASSPATH_ROOT/GCObj.class" 2>/dev/null || true
 
 sanitize_seed() {
     printf '%s' "$1" | tr './$' '___'
@@ -145,7 +147,7 @@ class_name_from_file() {
 
 has_main() {
     local cls="$1"
-    javap -classpath "$CLASSPATH_ROOT" -public "$cls" 2>/dev/null | rg -q 'public static void main\(java.lang.String\[\]\)'
+    javap -classpath "$CLASSPATH_ROOT" -public "$cls" 2>/dev/null | grep -Eq 'public static void main\(java\.lang\.String\[\]\)'
 }
 
 export_mutant() {
@@ -163,7 +165,7 @@ export_mutant() {
     target_dir="$OUT/testcases/$seed_safe/$id"
 
     mkdir -p "$target_dir/$(dirname "$class_path")"
-    java -cp "$(build_strip_cp)" com.classming.util.StripPrintInstrumentation "$mutant" "$target_dir/$class_path"
+    "$(resolve_java8)" -cp "$(build_strip_cp)" com.classming.util.StripPrintInstrumentation "$mutant" "$target_dir/$class_path"
     cp "$mutant" "$OUT/raw/${id}.${class_name}.class" 2>/dev/null || true
 
     run_cmd="java -cp \"$target_dir:$CLEAN_CLASSPATH_ROOT\" $seed"
@@ -204,6 +206,8 @@ run_seed() {
         cp "$CLEAN_CLASSPATH_ROOT/$seed_rel" "$CLASSPATH_ROOT/$seed_rel"
     fi
     cp "sootOutput/Print.class" "$CLASSPATH_ROOT/Print.class" 2>/dev/null || true
+    cp "sootOutput/leetcodes/out/production/leetcodes/GCObj.class" "$CLASSPATH_ROOT/GCObj.class" 2>/dev/null || true
+    cp "sootOutput/HotSpot/GCObj.class" "$CLASSPATH_ROOT/GCObj.class" 2>/dev/null || true
 
     rm -rf AcceptHistory RejectHistory nolivecode tmp
     mkdir -p AcceptHistory RejectHistory nolivecode tmp
@@ -244,7 +248,7 @@ while IFS= read -r classfile; do
 
     seed="$(class_name_from_file "$classfile")"
     case "$seed" in
-        Print|GCObj) continue ;;
+        Print|GCObj|*.Print|*.GCObj) continue ;;
     esac
 
     if [ "$RUN_ALL" != "1" ]; then
@@ -259,7 +263,7 @@ while IFS= read -r classfile; do
     if [ "$LIMIT" -gt 0 ] && [ "$processed" -ge "$LIMIT" ]; then
         break
     fi
-done < <(rg --files "$CLASSPATH_ROOT" -g '*.class' | sort)
+done < <(find "$CLASSPATH_ROOT" -type f -name '*.class' | sort)
 
 echo "Processed seeds: $processed"
 echo "Output: $OUT"

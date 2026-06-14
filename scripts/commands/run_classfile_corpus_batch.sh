@@ -80,7 +80,7 @@ sanitize() {
 
 class_internal_name() {
     local classfile="$1"
-    javap -public "$classfile" 2>/dev/null | sed -n -E \
+    javap -public -cp . "$classfile" 2>/dev/null | sed -n -E \
         -e 's/^(public |protected |private |final |abstract |strictfp )*(class|interface|enum) ([^ <{]+).*/\3/p' \
         -e 's/^(public |protected |private |final |abstract |strictfp )*@interface ([^ <{]+).*/\2/p' \
         | sed -n '1p'
@@ -88,7 +88,7 @@ class_internal_name() {
 
 has_main_classfile() {
     local classfile="$1"
-    javap -public "$classfile" 2>/dev/null | rg -q 'public static void main\(java.lang.String\[\]\)'
+    javap -public -cp . "$classfile" 2>/dev/null | grep -Eq 'public static void main\(java\.lang\.String\[\]\)'
 }
 
 copy_common_deps() {
@@ -96,6 +96,38 @@ copy_common_deps() {
     if [ -f "$INPUT/GCObj.class" ]; then
         cp "$INPUT/GCObj.class" "$target_root/GCObj.class"
     fi
+    cp "sootOutput/HotSpot/GCObj.class" "$target_root/GCObj.class" 2>/dev/null || true
+    cp "sootOutput/leetcodes/out/production/leetcodes/GCObj.class" "$target_root/GCObj.class" 2>/dev/null || true
+    cp "sootOutput/Print.class" "$target_root/Print.class" 2>/dev/null || true
+}
+
+internal_path_for_class() {
+    local internal="$1"
+    printf '%s.class' "$(printf '%s' "$internal" | tr '.' '/')"
+}
+
+copy_seed_family() {
+    local classfile="$1"
+    local internal="$2"
+    local deps_root="$3"
+    local internal_path sibling sibling_internal sibling_path top_level sibling_top_level
+
+    internal_path="$(internal_path_for_class "$internal")"
+    mkdir -p "$deps_root/$(dirname "$internal_path")"
+    cp "$classfile" "$deps_root/$internal_path"
+
+    top_level="${internal%%\$*}"
+    for sibling in "$(dirname "$classfile")"/*.class; do
+        [ -f "$sibling" ] || continue
+        [ "$sibling" != "$classfile" ] || continue
+        sibling_internal="$(class_internal_name "$sibling")"
+        [ -n "$sibling_internal" ] || continue
+        sibling_top_level="${sibling_internal%%\$*}"
+        [ "$sibling_top_level" = "$top_level" ] || continue
+        sibling_path="$(internal_path_for_class "$sibling_internal")"
+        mkdir -p "$deps_root/$(dirname "$sibling_path")"
+        cp "$sibling" "$deps_root/$sibling_path"
+    done
 }
 
 export_mutant() {
@@ -115,7 +147,7 @@ export_mutant() {
     target_dir="$OUT/testcases/$seed_id/$id"
 
     mkdir -p "$target_dir/$(dirname "$class_path")"
-    java -cp "$(build_strip_cp)" com.classming.util.StripPrintInstrumentation "$mutant" "$target_dir/$class_path"
+    "$(resolve_java8)" -cp "$(build_strip_cp)" com.classming.util.StripPrintInstrumentation "$mutant" "$target_dir/$class_path"
     cp "$mutant" "$OUT/raw/${id}.${class_name}.class" 2>/dev/null || true
 
     run_cmd="java -cp \"$target_dir:$deps_root\" $seed"
@@ -156,7 +188,7 @@ run_classfile_seed() {
 
     seed="$(printf '%s' "$internal" | tr '/' '.')"
     seed_id="$(sanitize "$seed")__$(basename "$classfile" .class | tr '@' '_')"
-    internal_path="$internal.class"
+    internal_path="$(internal_path_for_class "$internal")"
     deps_root="$OUT/work/deps/$seed_id"
     run_root="$OUT/work/run/$seed_id"
     log_file="$OUT/logs/$seed_id.log"
@@ -167,7 +199,7 @@ run_classfile_seed() {
     rm -rf "$deps_root" "$run_root" AcceptHistory RejectHistory nolivecode tmp
     mkdir -p "$deps_root/$(dirname "$internal_path")" "$run_root" AcceptHistory RejectHistory nolivecode tmp
 
-    cp "$classfile" "$deps_root/$internal_path"
+    copy_seed_family "$classfile" "$internal" "$deps_root"
     copy_common_deps "$deps_root"
     cp -R "$deps_root"/. "$run_root"/
     cp "sootOutput/Print.class" "$run_root/Print.class" 2>/dev/null || true
@@ -218,7 +250,7 @@ while IFS= read -r classfile; do
     if [ "$LIMIT" -gt 0 ] && [ "$processed" -ge "$LIMIT" ]; then
         break
     fi
-done < <(rg --files "$INPUT" -g '*.class' | sort)
+done < <(find "$INPUT" -type f -name '*.class' | sort)
 
 echo "Processed seeds: $processed"
 echo "Output: $OUT"

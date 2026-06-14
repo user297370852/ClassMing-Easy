@@ -62,7 +62,7 @@ build_repo_deps_cp() {
     for jar in "$CLASSMING_ROOT"/dependencies/*.jar; do
         [ -f "$jar" ] || continue
         case "$jar" in
-            *guava*|*asm*) ;;
+            *soot-*|*guava*|*failureaccess-*|*functionaljava-*|*dexlib2-*|*junit-*|*slf4j-*|*asm*|*jasmin-*|*java_cup-*|*java-cup-*|*heros-*|*axml-*|*polyglot-*|*xmlpull-*) ;;
             *) append_existing_jars cp "$jar" ;;
         esac
     done
@@ -72,6 +72,10 @@ build_repo_deps_cp() {
 resolve_lib_dir() {
     if [ -n "${CLASSMING_LIB_DIR:-}" ] && [ -d "$CLASSMING_LIB_DIR" ]; then
         printf '%s' "$CLASSMING_LIB_DIR"
+        return 0
+    fi
+    if [ -d "$CLASSMING_ROOT/dependencies" ]; then
+        printf '%s' "$CLASSMING_ROOT/dependencies"
         return 0
     fi
     if [ -d "$CLASSMING_ROOT/lib" ]; then
@@ -115,6 +119,57 @@ build_external_cp() {
 
     append_existing_jars cp "$soot" "$guava" "$failureaccess" "$functionaljava" "$dexlib" "$junit" "$slf4j_api" "$slf4j_simple" "$commons_io" "$asm" "$asm_tree" "$asm_commons" "$asm_util" "$jasmin" "$java_cup" "$heros" "$axml" "$polyglot" "$xmlpull"
     printf '%s' "$cp"
+}
+
+resolve_java8() {
+    if [ -n "${JAVA8_HOME:-}" ] && [ -x "${JAVA8_HOME}/bin/java" ]; then
+        printf '%s' "${JAVA8_HOME}/bin/java"
+        return 0
+    fi
+    local java8_home
+    java8_home="$(resolve_java8_home)"
+    if [ -n "$java8_home" ] && [ -x "$java8_home/bin/java" ]; then
+        printf '%s' "$java8_home/bin/java"
+        return 0
+    fi
+    printf '%s' "java"
+}
+
+resolve_java8_home() {
+    if [ -n "${JAVA8_HOME:-}" ] && [ -d "${JAVA8_HOME}" ]; then
+        printf '%s' "${JAVA8_HOME}"
+        return 0
+    fi
+    local candidate
+    for candidate in \
+        "/usr/lib/jvm/java-8-openjdk-amd64" \
+        "/usr/lib/jvm/java-8-oracle" \
+        "/usr/lib/jvm/jdk8" \
+        "/usr/java/jdk1.8.0" \
+        "/usr/local/java/jdk1.8.0"; do
+        if [ -x "$candidate/bin/java" ]; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+    done
+    if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+        candidate="$(/usr/libexec/java_home -v 1.8 2>/dev/null || true)"
+        if [ -x "$candidate/bin/java" ]; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+    fi
+    printf '%s' ""
+}
+
+resolve_javac() {
+    local java8_home
+    java8_home="$(resolve_java8_home)"
+    if [ -n "$java8_home" ] && [ -x "$java8_home/bin/javac" ]; then
+        printf '%s' "$java8_home/bin/javac"
+        return 0
+    fi
+    printf '%s' "javac"
 }
 
 resolve_rt_jar() {

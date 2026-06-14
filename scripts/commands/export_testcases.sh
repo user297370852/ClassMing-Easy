@@ -58,7 +58,7 @@ for mutant in "$HISTORY"/*.class; do
 
     target_dir="$OUT/$id"
     mkdir -p "$target_dir/$(dirname "$class_path")"
-    java -cp "$(build_strip_cp)" com.classming.util.StripPrintInstrumentation "$mutant" "$target_dir/$class_path"
+    "$(resolve_java8)" -cp "$(build_strip_cp)" com.classming.util.StripPrintInstrumentation "$mutant" "$target_dir/$class_path"
 
     count=$((count + 1))
 done

@@ -39,4 +39,4 @@ echo "=== Classming Runner ==="
 echo "Args: $@"
 echo ""
 
-java -Xms128m -Xmx20480m -Dfile.encoding=UTF-8 -cp "$(build_runtime_cp)" com.classming.ClassmingEntry "$@"
+"$(resolve_java8)" -Xms128m -Xmx20480m -Dfile.encoding=UTF-8 -cp "$(build_runtime_cp)" com.classming.ClassmingEntry "$@"

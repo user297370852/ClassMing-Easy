@@ -21,7 +21,7 @@ rm -rf out/production/classming
 mkdir -p out/production/classming
 
 find src -name "*.java" > sources.txt
-javac -d out/production/classming -cp "$(build_compile_cp)" @sources.txt
+"$(resolve_javac)" -source 1.8 -target 1.8 -d out/production/classming -cp "$(build_compile_cp)" @sources.txt
 
 echo ""
 echo "=== Build Complete ==="
